@@ -1,0 +1,323 @@
+table FactProjects
+
+	measure 'Total Projects' = DISTINCTCOUNT(FactProjects[ResourceGroup])
+		formatString: #,##0
+
+	measure 'Total Vulnerabilities' = COUNTROWS(FactProjects)
+		formatString: #,##0
+
+
+	measure 'Resource Groups' = DISTINCTCOUNT(FactProjects[ResourceGroup])
+		formatString: #,##0
+
+	measure 'Critical Vulnerabilities' = CALCULATE([Total Vulnerabilities], FILTER(FactProjects, FactProjects[RiskLevel] = "Critical" || FactProjects[Severity] = "Critical"))
+		formatString: #,##0
+
+	measure 'High Critical Vulnerabilities' = CALCULATE([Total Vulnerabilities], FILTER(FactProjects, FactProjects[RiskLevel] IN {"High","Critical"} || FactProjects[Severity] IN {"High","Critical"}))
+		formatString: #,##0
+
+	measure 'At Risk Vulnerabilities' = CALCULATE([Total Vulnerabilities], FactProjects[Is At Risk] = TRUE())
+		formatString: #,##0
+
+	measure 'Active Projects' = CALCULATE(DISTINCTCOUNT(FactProjects[ResourceGroup]), FactProjects[Status_code] = "Unhealthy")
+		formatString: #,##0
+
+	measure 'Completed Projects' = CALCULATE(DISTINCTCOUNT(FactProjects[ResourceGroup]), FactProjects[Status_code] <> "Unhealthy")
+		formatString: #,##0
+
+	measure 'Overdue Projects' = CALCULATE(DISTINCTCOUNT(FactProjects[ResourceGroup]), FactProjects[Is Overdue] = TRUE())
+		formatString: #,##0
+
+	measure 'At Risk Projects' = CALCULATE(DISTINCTCOUNT(FactProjects[ResourceGroup]), FactProjects[Is At Risk] = TRUE())
+		formatString: #,##0
+
+	measure 'Critical Projects' = CALCULATE(DISTINCTCOUNT(FactProjects[ResourceGroup]), FactProjects[Is Critical] = TRUE())
+		formatString: #,##0
+
+	measure 'Average Progress %' = AVERAGE(FactProjects[Progress %])
+		formatString: 0.0%
+
+	measure 'Open Findings Count' = SUM(FactProjects[Open Findings])
+		formatString: #,##0
+
+	measure 'Closed Findings Count' = SUM(FactProjects[Closed Findings])
+		formatString: #,##0
+
+	measure 'Total Findings' = SUM(FactProjects[Total Findings Calc])
+		formatString: #,##0
+
+	measure 'Closure %' = DIVIDE([Closed Findings Count], [Total Findings])
+		formatString: 0.0%
+
+	measure 'SLA Non-Compliant' = CALCULATE([Total Vulnerabilities], FactProjects[SLA_Compliance] = "Non-compliant")
+		formatString: #,##0
+
+	measure 'SLA On Time' = CALCULATE([Total Vulnerabilities], FactProjects[SLA_Compliance] = "On Time")
+		formatString: #,##0
+
+	measure 'SLA Compliance %' = DIVIDE([SLA On Time], [Total Vulnerabilities])
+		formatString: 0.0%
+
+	measure 'Average Vulnerability Age' = AVERAGE(FactProjects[Vulnerability Age])
+		formatString: #,##0.0
+
+	measure 'Distinct Resources' = DISTINCTCOUNT(FactProjects[ResourceKey])
+		formatString: #,##0
+
+	measure 'Data Quality Complete %' = 
+		DIVIDE(
+			CALCULATE(
+				[Total Vulnerabilities],
+				FactProjects[ResourceGroup] <> BLANK(),
+				FactProjects[ResourceName] <> BLANK(),
+				FactProjects[RiskLevel] <> BLANK(),
+				FactProjects[Severity] <> BLANK(),
+				FactProjects[SLA_Compliance] <> BLANK(),
+				FactProjects[Environment] <> BLANK(),
+				FactProjects[Status_code] <> BLANK()
+			),
+			[Total Vulnerabilities]
+		)
+		formatString: 0.0%
+
+	column Project
+		dataType: string
+		sourceColumn: Project
+
+	column 'Project ID'
+		dataType: string
+		sourceColumn: Project ID
+
+	column Status
+		dataType: string
+		sourceColumn: Status
+
+	column Owner
+		dataType: string
+		sourceColumn: Owner
+
+	column 'Progress %'
+		dataType: double
+		formatString: 0.0%
+		sourceColumn: Progress %
+
+	column 'Start Date'
+		dataType: dateTime
+		formatString: dd/MM/yyyy
+		sourceColumn: Start Date
+
+	column 'End Date'
+		dataType: dateTime
+		formatString: dd/MM/yyyy
+		sourceColumn: End Date
+
+	column Risk
+		dataType: string
+		sourceColumn: Risk
+
+	column Criticality
+		dataType: string
+		sourceColumn: Criticality
+
+	column 'Open Findings'
+		dataType: int64
+		formatString: #,##0
+		sourceColumn: Open Findings
+
+	column 'Closed Findings'
+		dataType: int64
+		formatString: #,##0
+		sourceColumn: Closed Findings
+
+	column 'Total Findings Raw'
+		dataType: int64
+		sourceColumn: Total Findings
+
+	column 'Total Findings Calc'
+		dataType: int64
+		formatString: #,##0
+		sourceColumn: Total Findings Calc
+
+	column 'Last Update'
+		dataType: dateTime
+		formatString: dd/MM/yyyy
+		sourceColumn: Last Update
+
+	column Area
+		dataType: string
+		sourceColumn: Area
+
+	column Category
+		dataType: string
+		sourceColumn: Category
+
+	column 'Is Overdue'
+		dataType: boolean
+		sourceColumn: Is Overdue
+
+	column 'Is At Risk'
+		dataType: boolean
+		sourceColumn: Is At Risk
+
+	column 'Is Critical'
+		dataType: boolean
+		sourceColumn: Is Critical
+
+	column ResourceType
+		dataType: string
+		sourceColumn: ResourceType
+
+	column ChangeRequest
+		dataType: string
+		sourceColumn: ChangeRequest
+
+	column ResourceGroup
+		dataType: string
+		sourceColumn: ResourceGroup
+
+	column ResourceName
+		dataType: string
+		sourceColumn: ResourceName
+
+	column ResourceKey
+		dataType: string
+		sourceColumn: ResourceKey
+
+	column RiskLevel
+		dataType: string
+		sourceColumn: RiskLevel
+
+	column Severity
+		dataType: string
+		sourceColumn: Severity
+
+	column UserImpact
+		dataType: string
+		sourceColumn: UserImpact
+
+	column DisplayName
+		dataType: string
+		sourceColumn: DisplayName
+
+	column FirstEvaluationDate
+		dataType: dateTime
+		formatString: dd/MM/yyyy
+		sourceColumn: FirstEvaluationDate
+
+	column StatusChangeDate
+		dataType: dateTime
+		formatString: dd/MM/yyyy
+		sourceColumn: StatusChangeDate
+
+	column 'Vulnerability Age'
+		dataType: int64
+		formatString: #,##0
+		sourceColumn: Vulnerability Age
+
+	column Description
+		dataType: string
+		sourceColumn: Description
+
+	column RemediationDescription
+		dataType: string
+		sourceColumn: RemediationDescription
+
+	column SLA_Compliance
+		dataType: string
+		sourceColumn: SLA_Compliance
+
+	column Environment
+		dataType: string
+		sourceColumn: Environment
+
+	column Status_code
+		dataType: string
+		sourceColumn: Status_code
+
+	column 'Date Report'
+		dataType: dateTime
+		formatString: dd/MM/yyyy
+		sourceColumn: Date Report
+
+	column Progress
+		dataType: double
+		sourceColumn: Progress
+
+	column Implementer
+		dataType: string
+		sourceColumn: Implementer
+
+
+	column 'Evaluation Month'
+		dataType: dateTime
+		formatString: MMM yyyy
+		sourceColumn: Evaluation Month
+
+	column 'Age Band'
+		dataType: string
+		sourceColumn: Age Band
+
+	partition FactProjects = m
+		mode: import
+		source =
+			let
+			    // Temporary sample source committed in the repository.
+			    // LOCAL ONEDRIVE SOURCE. For production, replace SourcePath with the final SharePoint connector/query.
+			    SourcePath = "C:\Users\ChristianYepez\OneDrive\dataCloud_All_20020629_Amanda.xlsx",
+			    Source = Excel.Workbook(File.Contents(SourcePath), null, true),
+			    RawSheet = Source{[Item="Sheet1",Kind="Sheet"]}[Data],
+			    Promoted = Table.PromoteHeaders(RawSheet, [PromoteAllScalars=true]),
+			    Clean = Table.TransformColumnNames(Promoted, each Text.Trim(Text.Clean(Text.From(_)))),
+			    Filtered = Table.SelectRows(Clean, each [ResourceGroup] <> null and Text.Trim(Text.From([ResourceGroup])) <> "" and [ResourceName] <> null and Text.Trim(Text.From([ResourceName])) <> ""),
+			    Typed = Table.TransformColumnTypes(Filtered,{
+			        {"ResourceType", type text}, {"ChangeRequest", type text}, {"ResourceGroup", type text},
+			        {"ResourceName", type text}, {"RiskLevel", type text}, {"Severity", type text},
+			        {"UserImpact", type text}, {"DisplayName", type text}, {"FirstEvaluationDate", type date},
+			        {"StatusChangeDate", type date}, {"Vulnerability Age", Int64.Type}, {"Description", type text},
+			        {"RemediationDescription", type text}, {"SLA_Compliance", type text}, {"Owner", type text},
+			        {"Environment", type text}, {"Status_code", type text}, {"Última fecha: Date Report", type date},
+			        {"Progress", type number}, {"Implementer", type text}
+			    }),
+			    Renamed = Table.RenameColumns(Typed, {{"Última fecha: Date Report", "Date Report"}}),
+			    TrimmedText = Table.TransformColumns(Renamed, {
+			        {"ResourceType", each if _ = null then null else Text.Trim(Text.Clean(Text.From(_))), type text},
+			        {"ChangeRequest", each if _ = null or Text.Trim(Text.From(_)) = "" then "Not provided" else Text.Trim(Text.Clean(Text.From(_))), type text},
+			        {"ResourceGroup", each Text.Trim(Text.Clean(Text.From(_))), type text},
+			        {"ResourceName", each Text.Trim(Text.Clean(Text.From(_))), type text},
+			        {"RiskLevel", each Text.Proper(Text.Trim(Text.From(_))), type text},
+			        {"Severity", each Text.Proper(Text.Trim(Text.From(_))), type text},
+			        {"UserImpact", each if _ = null or Text.Trim(Text.From(_)) = "" then "Not provided" else Text.Trim(Text.Clean(Text.From(_))), type text},
+			        {"DisplayName", each if _ = null or Text.Trim(Text.From(_)) = "" then "Not provided" else Text.Trim(Text.Clean(Text.From(_))), type text},
+			        {"Description", each if _ = null or Text.Trim(Text.From(_)) = "" then "Not provided" else Text.Trim(Text.Clean(Text.From(_))), type text},
+			        {"RemediationDescription", each if _ = null or Text.Trim(Text.From(_)) = "" then "Not provided" else Text.Trim(Text.Clean(Text.From(_))), type text},
+			        {"SLA_Compliance", each if _ = null then "Not provided" else Text.Trim(Text.From(_)), type text},
+			        {"Owner", each if _ = null or Text.Trim(Text.From(_)) = "" then "Not assigned" else Text.Lower(Text.Trim(Text.From(_))), type text},
+			        {"Environment", each if _ = "Nom-Prod" then "Non-Prod" else Text.Trim(Text.From(_)), type text},
+			        {"Status_code", each if _ = null then "Not provided" else Text.Trim(Text.From(_)), type text},
+			        {"Implementer", each if _ = null or Text.Trim(Text.From(_)) = "" then "Not assigned" else Text.Trim(Text.Clean(Text.From(_))), type text}
+			    }),
+
+			    ProgressNormalized = Table.TransformColumns(TrimmedText, {{"Progress", each try if _ = null then null else if Number.From(_) > 1 then Number.From(_) / 100 else Number.From(_) otherwise null, type number}}),
+			    EvaluationMonth = Table.AddColumn(ProgressNormalized, "Evaluation Month", each if [FirstEvaluationDate] = null then null else Date.StartOfMonth([FirstEvaluationDate]), type date),
+			    AgeBand = Table.AddColumn(EvaluationMonth, "Age Band", each if [Vulnerability Age] = null then "No data" else if [Vulnerability Age] <= 30 then "0-30 days" else if [Vulnerability Age] <= 60 then "31-60 days" else if [Vulnerability Age] <= 90 then "61-90 days" else ">90 days", type text),
+			    ResourceKey = Table.AddColumn(AgeBand, "ResourceKey", each Text.Combine(List.RemoveNulls({[ResourceGroup],[ResourceName]}), " | "), type text),
+			    Project = Table.AddColumn(ResourceKey, "Project", each [ResourceGroup], type text),
+			    ProjectId = Table.AddColumn(Project, "Project ID", each [ResourceName], type text),
+			    Status = Table.AddColumn(ProjectId, "Status", each [Status_code], type text),
+			    ProgressAlias = Table.AddColumn(Status, "Progress %", each [Progress], type number),
+			    StartDate = Table.AddColumn(ProgressAlias, "Start Date", each [FirstEvaluationDate], type date),
+			    EndDate = Table.AddColumn(StartDate, "End Date", each [StatusChangeDate], type date),
+			    Risk = Table.AddColumn(EndDate, "Risk", each [RiskLevel], type text),
+			    Criticality = Table.AddColumn(Risk, "Criticality", each [Severity], type text),
+			    OpenFindings = Table.AddColumn(Criticality, "Open Findings", each if Text.Lower(Text.From([Status_code])) = "unhealthy" then 1 else 0, Int64.Type),
+			    ClosedFindings = Table.AddColumn(OpenFindings, "Closed Findings", each if Text.Lower(Text.From([Status_code])) = "unhealthy" then 0 else 1, Int64.Type),
+			    TotalFindings = Table.AddColumn(ClosedFindings, "Total Findings", each 1, Int64.Type),
+			    TotalCalc = Table.AddColumn(TotalFindings, "Total Findings Calc", each 1, Int64.Type),
+			    LastUpdate = Table.AddColumn(TotalCalc, "Last Update", each [Date Report], type date),
+			    Area = Table.AddColumn(LastUpdate, "Area", each [ResourceType], type text),
+			    Category = Table.AddColumn(Area, "Category", each [DisplayName], type text),
+			    IsOverdue = Table.AddColumn(Category, "Is Overdue", each Text.Lower(Text.From([SLA_Compliance])) = "non-compliant", type logical),
+			    IsAtRisk = Table.AddColumn(IsOverdue, "Is At Risk", each [Is Overdue] or List.Contains({"high","critical"}, Text.Lower(Text.From([RiskLevel]))) or List.Contains({"high","critical"}, Text.Lower(Text.From([Severity]))), type logical),
+			    IsCritical = Table.AddColumn(IsAtRisk, "Is Critical", each List.Contains({"critical"}, Text.Lower(Text.From([RiskLevel]))) or List.Contains({"critical"}, Text.Lower(Text.From([Severity]))), type logical)
+			in
+			    IsCritical
