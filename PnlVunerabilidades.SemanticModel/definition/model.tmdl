@@ -1,0 +1,7 @@
+model Model
+	culture: es-EC
+	defaultPowerBIDataSourceVersion: powerBI_V3
+	sourceQueryCulture: es-EC
+	discourageImplicitMeasures
+
+ref table FactProjects
