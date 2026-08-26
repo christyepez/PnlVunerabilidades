@@ -1,48 +1,28 @@
-# Diseño gerencial v4
+# Dashboard Design
 
-## Principios
+## Storytelling
 
-- Eliminar visuales sin datos o que dependan de `Progress`.
-- Priorizar vulnerabilidades, SLA, aging, criticidad, recursos y tendencias.
-- Usar filtros dropdown en la franja superior.
-- Colocar KPIs críticos inmediatamente a la derecha de los filtros.
-- Usar azul oscuro `#17365D` para barras y líneas.
-- Evitar visuales duplicados.
+### 1. Executive Summary
+Provides a 30–60 second executive view of exposure, critical vulnerabilities, SLA compliance, aging and the most affected resource groups.
 
-## Resumen Ejecutivo
+### 2. Portfolio Monitoring
+Explains where vulnerabilities are concentrated by resource group and how the portfolio is evolving over time.
 
-Filtros: Ambiente, Riesgo, Severidad, Responsable.
+### 3. Risk & Vulnerabilities
+Focuses on risk level, severity and SLA breaches. It supports prioritization of critical and overdue remediation work.
 
-KPIs: Vulnerabilidades, Críticas, SLA Vencido, Resource Groups, Recursos, En Riesgo, Cumplimiento SLA, Aging Promedio, High + Critical.
+### 4. Trends & Aging
+Shows whether vulnerability intake is increasing or decreasing and how long open findings have remained in the portfolio.
 
-Visuales: tendencia mensual de vulnerabilidades, vulnerabilidades por nivel de riesgo y tabla Top Resource Groups.
+### 5. Vulnerability Detail
+Provides the operational drill-down needed to identify resources, owners, remediation descriptions and SLA status.
 
-## Portafolio y Seguimiento
+## Visual Standards
 
-Filtros: Ambiente, Tipo de Recurso, Riesgo, Responsable.
-
-KPIs: Resource Groups, Recursos, SLA Vencido.
-
-Visuales: vulnerabilidades por Resource Group, evolución mensual y tabla de seguimiento.
-
-## Riesgo y Vulnerabilidades
-
-Filtros: Riesgo, Severidad, SLA, Ambiente.
-
-KPIs: En Riesgo, Críticas, SLA Vencido.
-
-Visuales: barras por riesgo, columnas por severidad, línea de SLA vencido en el tiempo y detalle de riesgo.
-
-## Tendencias y Aging
-
-Filtros: Ambiente, Riesgo, SLA, Resource Group.
-
-KPIs: Aging Promedio, SLA Vencido, SLA On Time.
-
-Visuales: vulnerabilidades detectadas por mes, aging promedio por mes, distribución por bandas de aging y tabla de mayor antigüedad.
-
-## Detalle de Vulnerabilidades
-
-Filtros: Ambiente, Riesgo, Severidad, Tipo de Recurso, Responsable, SLA.
-
-Tabla operativa con Resource Group, Resource Name, tipo, vulnerabilidad, riesgo, severidad, aging, SLA, Owner, Implementer y fechas.
+- Page titles, visual titles, labels and value labels are in English.
+- Slicers use dropdown mode and show only friendly titles.
+- Bar and column charts are sorted from highest to lowest by their primary measure.
+- Time-series charts remain chronological.
+- Bar, column and line visuals use dark blue `#17365D`.
+- Data labels are enabled on charts.
+- Technical field names are replaced by friendly English labels in the report layer.
