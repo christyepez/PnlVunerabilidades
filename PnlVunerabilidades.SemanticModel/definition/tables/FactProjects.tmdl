@@ -222,9 +222,9 @@ table FactProjects
 		mode: import
 		source =
 			let
-			    // SAMPLE SOURCE. Replace only SourceUrl with the final SharePoint URL when production access is ready.
-			    SourceUrl = "https://raw.githubusercontent.com/christyepez/PnlVunerabilidades/feature/pbip-pbir-gerencial/data/sample/dataCloud_All_20020629_Amanda.xlsx",
-			    Source = Excel.Workbook(Web.Contents(SourceUrl), null, true),
+			    // LOCAL ONEDRIVE SOURCE. For production, replace SourcePath with the final SharePoint connector/query.
+			    SourcePath = "C:\Users\ChristianYepez\OneDrive\dataCloud_All_20020629_Amanda.xlsx",
+			    Source = Excel.Workbook(File.Contents(SourcePath), null, true),
 			    RawSheet = Source{[Item="Sheet1",Kind="Sheet"]}[Data],
 			    Promoted = Table.PromoteHeaders(RawSheet, [PromoteAllScalars=true]),
 			    Clean = Table.TransformColumnNames(Promoted, each Text.Trim(Text.Clean(Text.From(_)))),
