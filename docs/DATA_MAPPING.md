@@ -1,57 +1,39 @@
-# Data Mapping — Vulnerability Management
+# Data Mapping and Quality
 
-## Archivo de referencia
+## Source Columns
 
-`dataCloud_All_20020629_Amanda.xlsx`, hoja `Sheet1`.
+| Source field | Report label | Quality handling |
+|---|---|---|
+| ResourceType | Resource Type | Trim/Clean |
+| ChangeRequest | Change Request | Missing → Not provided |
+| ResourceGroup | Resource Group | Required; blank rows excluded |
+| ResourceName | Resource Name | Required; blank rows excluded |
+| RiskLevel | Risk Level | Trim + proper casing |
+| Severity | Severity | Trim + proper casing |
+| UserImpact | User Impact | Missing → Not provided |
+| DisplayName | Vulnerability | Missing → Not provided |
+| FirstEvaluationDate | First Evaluation Date | Date |
+| StatusChangeDate | Status Change Date | Date |
+| Vulnerability Age | Vulnerability Age | Integer |
+| Description | Description | Missing → Not provided |
+| RemediationDescription | Remediation | Missing → Not provided |
+| SLA_Compliance | SLA Compliance | Trim |
+| Owner | Owner | Lowercase; missing → Not assigned |
+| Environment | Environment | `Nom-Prod` → `Non-Prod` |
+| Status_code | Status | Trim |
+| Última fecha: Date Report | Report Date | Renamed to `Date Report` |
+| Progress | Progress | Nullable; unused in executive visuals because sample is empty |
+| Implementer | Implementer | Missing → Not assigned |
 
-- 20 columnas de origen.
-- 789 registros con información efectiva después de eliminar filas vacías.
-- 30 `ResourceGroup` distintos.
-- 501 combinaciones `ResourceGroup + ResourceName`.
+## Derived Fields
 
-## Mapeo gerencial
+- `ResourceKey`
+- `Evaluation Month`
+- `Age Band`: `0-30 days`, `31-60 days`, `61-90 days`, `>90 days`
+- `Is Overdue`
+- `Is At Risk`
+- `Is Critical`
 
-| Campo origen | Uso en el panel |
-|---|---|
-| ResourceGroup | Agrupador de proyecto / portafolio |
-| ResourceName | Recurso afectado |
-| ResourceType | Tecnología / categoría del recurso |
-| RiskLevel | Nivel de riesgo |
-| Severity | Severidad / criticidad |
-| SLA_Compliance | Estado SLA y determinación de vencimiento |
-| Vulnerability Age | Aging del hallazgo |
-| Owner | Responsable accountable |
-| Implementer | Responsable de implementación/remediación |
-| Environment | Prod / Non-Prod |
-| Status_code | Estado de salud del hallazgo |
-| FirstEvaluationDate | Fecha de primera evaluación |
-| StatusChangeDate | Fecha de cambio de estado |
-| Última fecha: Date Report | Fecha del corte/reporting |
-| Progress | Avance de remediación |
-| DisplayName | Nombre de la recomendación/vulnerabilidad |
-| Description | Descripción del hallazgo |
-| RemediationDescription | Acción correctiva recomendada |
-| ChangeRequest | Change relacionado |
-| UserImpact | Impacto al usuario |
+## Required-field Data Quality
 
-## Compatibilidad PBIR
-
-Para conservar los visuales desarrollados inicialmente, Power Query agrega aliases:
-
-- `Project = ResourceGroup`
-- `Project ID = ResourceName`
-- `Status = Status_code`
-- `Progress % = Progress`
-- `Start Date = FirstEvaluationDate`
-- `End Date = StatusChangeDate`
-- `Risk = RiskLevel`
-- `Criticality = Severity`
-- `Last Update = Date Report`
-- `Area = ResourceType`
-- `Category = DisplayName`
-
-`Is Overdue` se calcula desde `SLA_Compliance = Non-compliant`. `Is At Risk` combina incumplimiento SLA y niveles High/Critical. `Is Critical` se deriva de nivel Critical.
-
-## Cambio a SharePoint
-
-La consulta concentra el origen en `SourceUrl`. El cambio productivo debe modificar únicamente esta variable por la URL final de SharePoint, siempre que la estructura del archivo final mantenga estas 20 columnas.
+The sample has complete values for `ResourceGroup`, `ResourceName`, `Owner`, `RiskLevel`, `Severity`, `SLA_Compliance`, `Environment`, and `Status_code` across all 789 effective rows.
