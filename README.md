@@ -1,45 +1,61 @@
 # PnlVunerabilidades — Power BI PBIP/PBIR
 
-Panel gerencial Power BI para seguimiento de vulnerabilidades Azure, SLA, aging, riesgo y criticidad.
+Executive Power BI dashboard for vulnerability governance, remediation tracking, SLA compliance, aging and Azure resource exposure.
 
-## Fuente temporal local
+## Architecture
 
-Durante la construcción el modelo usa:
+- **PBIP project**: `PnlVunerabilidades.pbip`
+- **Report definition**: `PnlVunerabilidades.Report` using enhanced **PBIR**
+- **Semantic model**: `PnlVunerabilidades.SemanticModel` using **TMDL**
+- **Current source**: `C:\Users\ChristianYepez\OneDrive\dataCloud_All_20020629_Amanda.xlsx`
+- **Future production source**: SharePoint/OneDrive; only the source step in `FactProjects.tmdl` must be replaced.
 
-`C:\Users\ChristianYepez\OneDrive\dataCloud_All_20020629_Amanda.xlsx`
+## Report Pages
 
-La consulta se concentra en `FactProjects.tmdl`, de modo que posteriormente se puede reemplazar el origen por SharePoint conservando el modelo y los visuales.
+1. **Executive Summary** — critical KPIs, vulnerability trend, risk distribution and top resource groups.
+2. **Portfolio Monitoring** — resource-group exposure, monthly trend and operational portfolio monitoring.
+3. **Risk & Vulnerabilities** — risk, severity, SLA non-compliance trend and risk detail.
+4. **Trends & Aging** — detected vulnerabilities over time, average aging and aging distribution.
+5. **Vulnerability Detail** — detailed operational table with dropdown filters.
 
-## Modelo real del archivo
+## Core KPIs
 
-- 789 registros efectivos.
-- 30 Resource Groups.
-- 501 recursos distintos.
-- Riesgo: Low / Medium / High / Critical.
-- SLA: On Time / Non-compliant.
-- Aging: `Vulnerability Age`.
-- Fechas de tendencia: `FirstEvaluationDate` y mes derivado `Evaluation Month`.
+- Total Vulnerabilities
+- Resource Groups
+- Distinct Resources
+- Critical Vulnerabilities
+- High + Critical Vulnerabilities
+- At Risk Vulnerabilities
+- SLA Non-Compliant
+- SLA On Time
+- SLA Compliance %
+- Average Vulnerability Age
+- Data Quality Complete %
 
-## UI v4 gerencial
+## Data Quality Rules
 
-La revisión v4 elimina el diseño genérico basado en proyectos/avance y usa los datos efectivamente disponibles en el archivo:
+The Power Query layer:
+- excludes rows without `ResourceGroup` or `ResourceName`;
+- trims and cleans text values;
+- normalizes `Nom-Prod` to `Non-Prod`;
+- normalizes risk and severity casing;
+- converts missing descriptive values to `Not provided`;
+- converts missing owner/implementer values to `Not assigned`;
+- keeps the original `Progress` field nullable because the sample contains no populated values;
+- derives `Evaluation Month` and `Age Band` in English.
 
-- Filtros superiores en modo dropdown.
-- KPIs críticos inmediatamente a la derecha de los filtros.
-- Eliminados visuales dependientes de `Progress`, porque el archivo de referencia no contiene valores en esa columna.
-- Nuevas medidas: `Resource Groups`, `Critical Vulnerabilities`, `High Critical Vulnerabilities` y `At Risk Vulnerabilities`.
-- Nuevos campos derivados: `Evaluation Month` y `Age Band`.
-- Tendencias mensuales con gráficos de línea.
-- Barras y líneas estandarizadas en azul oscuro `#17365D`.
-- Eliminados visuales duplicados y referencias obsoletas a `Open Findings` / `Closed Findings` como medidas.
-- Filtrado de filas vacías por `ResourceGroup`, evitando el falso proyecto `(Blank)`.
+## Current Data Profile
 
-## Páginas
+Based on the sample file:
+- 789 effective vulnerability records;
+- 30 resource groups;
+- 501 distinct resources;
+- required governance fields are complete for all effective rows;
+- `Progress` is empty for all effective records and is intentionally not used in executive visuals.
 
-1. Resumen Ejecutivo.
-2. Portafolio y Seguimiento.
-3. Riesgo y Vulnerabilidades.
-4. Tendencias y Aging.
-5. Detalle de Vulnerabilidades.
+## Open and Refresh
 
-El proyecto se mantiene en formato PBIP + PBIR + TMDL para permitir versionamiento en Git.
+1. Keep the source workbook at `C:\Users\ChristianYepez\OneDrive\dataCloud_All_20020629_Amanda.xlsx`.
+2. Open `PnlVunerabilidades.pbip` in Power BI Desktop.
+3. Refresh the semantic model.
+4. When the final SharePoint source is available, replace the local source step without changing the semantic layer or visuals.
