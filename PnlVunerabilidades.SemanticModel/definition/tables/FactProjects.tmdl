@@ -6,6 +6,18 @@ table FactProjects
 	measure 'Total Vulnerabilities' = COUNTROWS(FactProjects)
 		formatString: #,##0
 
+	measure 'Resource Groups' = DISTINCTCOUNT(FactProjects[ResourceGroup])
+		formatString: #,##0
+
+	measure 'Critical Vulnerabilities' = CALCULATE([Total Vulnerabilities], FILTER(FactProjects, FactProjects[RiskLevel] = "Critical" || FactProjects[Severity] = "Critical"))
+		formatString: #,##0
+
+	measure 'High Critical Vulnerabilities' = CALCULATE([Total Vulnerabilities], FILTER(FactProjects, FactProjects[RiskLevel] IN {"High","Critical"} || FactProjects[Severity] IN {"High","Critical"}))
+		formatString: #,##0
+
+	measure 'At Risk Vulnerabilities' = CALCULATE([Total Vulnerabilities], FactProjects[Is At Risk] = TRUE())
+		formatString: #,##0
+
 	measure 'Active Projects' = CALCULATE(DISTINCTCOUNT(FactProjects[ResourceGroup]), FactProjects[Status_code] = "Unhealthy")
 		formatString: #,##0
 
@@ -218,6 +230,15 @@ table FactProjects
 		dataType: string
 		sourceColumn: Implementer
 
+	column 'Evaluation Month'
+		dataType: dateTime
+		formatString: MMM yyyy
+		sourceColumn: Evaluation Month
+
+	column 'Age Band'
+		dataType: string
+		sourceColumn: Age Band
+
 	partition FactProjects = m
 		mode: import
 		source =
@@ -228,7 +249,7 @@ table FactProjects
 			    RawSheet = Source{[Item="Sheet1",Kind="Sheet"]}[Data],
 			    Promoted = Table.PromoteHeaders(RawSheet, [PromoteAllScalars=true]),
 			    Clean = Table.TransformColumnNames(Promoted, each Text.Trim(Text.Clean(Text.From(_)))),
-			    Filtered = Table.SelectRows(Clean, each [ResourceGroup] <> null or [DisplayName] <> null),
+			    Filtered = Table.SelectRows(Clean, each [ResourceGroup] <> null),
 			    Typed = Table.TransformColumnTypes(Filtered,{
 			        {"ResourceType", type text}, {"ChangeRequest", type text}, {"ResourceGroup", type text},
 			        {"ResourceName", type text}, {"RiskLevel", type text}, {"Severity", type text},
@@ -240,7 +261,9 @@ table FactProjects
 			    }),
 			    Renamed = Table.RenameColumns(Typed, {{"Última fecha: Date Report", "Date Report"}}),
 			    ProgressNormalized = Table.TransformColumns(Renamed, {{"Progress", each try if _ = null then null else if Number.From(_) > 1 then Number.From(_) / 100 else Number.From(_) otherwise null, type number}}),
-			    ResourceKey = Table.AddColumn(ProgressNormalized, "ResourceKey", each Text.Combine(List.RemoveNulls({[ResourceGroup],[ResourceName]}), " | "), type text),
+			    EvaluationMonth = Table.AddColumn(ProgressNormalized, "Evaluation Month", each if [FirstEvaluationDate] = null then null else Date.StartOfMonth([FirstEvaluationDate]), type date),
+			    AgeBand = Table.AddColumn(EvaluationMonth, "Age Band", each if [Vulnerability Age] = null then "Sin dato" else if [Vulnerability Age] <= 30 then "0-30 días" else if [Vulnerability Age] <= 60 then "31-60 días" else if [Vulnerability Age] <= 90 then "61-90 días" else ">90 días", type text),
+			    ResourceKey = Table.AddColumn(AgeBand, "ResourceKey", each Text.Combine(List.RemoveNulls({[ResourceGroup],[ResourceName]}), " | "), type text),
 			    Project = Table.AddColumn(ResourceKey, "Project", each [ResourceGroup], type text),
 			    ProjectId = Table.AddColumn(Project, "Project ID", each [ResourceName], type text),
 			    Status = Table.AddColumn(ProjectId, "Status", each [Status_code], type text),
