@@ -24,16 +24,16 @@ table FactProjects
 	measure 'Average Progress %' = AVERAGE(FactProjects[Progress %])
 		formatString: 0.0%
 
-	measure 'Open Findings' = SUM(FactProjects[Open Findings])
+	measure 'Open Findings Count' = SUM(FactProjects[Open Findings])
 		formatString: #,##0
 
-	measure 'Closed Findings' = SUM(FactProjects[Closed Findings])
+	measure 'Closed Findings Count' = SUM(FactProjects[Closed Findings])
 		formatString: #,##0
 
 	measure 'Total Findings' = SUM(FactProjects[Total Findings Calc])
 		formatString: #,##0
 
-	measure 'Closure %' = DIVIDE([Closed Findings], [Total Findings])
+	measure 'Closure %' = DIVIDE([Closed Findings Count], [Total Findings])
 		formatString: 0.0%
 
 	measure 'SLA Non-Compliant' = CALCULATE([Total Vulnerabilities], FactProjects[SLA_Compliance] = "Non-compliant")
