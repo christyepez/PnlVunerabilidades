@@ -6,6 +6,7 @@ table FactProjects
 	measure 'Total Vulnerabilities' = COUNTROWS(FactProjects)
 		formatString: #,##0
 
+
 	measure 'Resource Groups' = DISTINCTCOUNT(FactProjects[ResourceGroup])
 		formatString: #,##0
 
@@ -62,6 +63,22 @@ table FactProjects
 
 	measure 'Distinct Resources' = DISTINCTCOUNT(FactProjects[ResourceKey])
 		formatString: #,##0
+
+	measure 'Data Quality Complete %' = 
+		DIVIDE(
+			CALCULATE(
+				[Total Vulnerabilities],
+				FactProjects[ResourceGroup] <> BLANK(),
+				FactProjects[ResourceName] <> BLANK(),
+				FactProjects[RiskLevel] <> BLANK(),
+				FactProjects[Severity] <> BLANK(),
+				FactProjects[SLA_Compliance] <> BLANK(),
+				FactProjects[Environment] <> BLANK(),
+				FactProjects[Status_code] <> BLANK()
+			),
+			[Total Vulnerabilities]
+		)
+		formatString: 0.0%
 
 	column Project
 		dataType: string
@@ -230,6 +247,7 @@ table FactProjects
 		dataType: string
 		sourceColumn: Implementer
 
+
 	column 'Evaluation Month'
 		dataType: dateTime
 		formatString: MMM yyyy
@@ -243,13 +261,14 @@ table FactProjects
 		mode: import
 		source =
 			let
+			    // Temporary sample source committed in the repository.
 			    // LOCAL ONEDRIVE SOURCE. For production, replace SourcePath with the final SharePoint connector/query.
 			    SourcePath = "C:\Users\ChristianYepez\OneDrive\dataCloud_All_20020629_Amanda.xlsx",
 			    Source = Excel.Workbook(File.Contents(SourcePath), null, true),
 			    RawSheet = Source{[Item="Sheet1",Kind="Sheet"]}[Data],
 			    Promoted = Table.PromoteHeaders(RawSheet, [PromoteAllScalars=true]),
 			    Clean = Table.TransformColumnNames(Promoted, each Text.Trim(Text.Clean(Text.From(_)))),
-			    Filtered = Table.SelectRows(Clean, each [ResourceGroup] <> null),
+			    Filtered = Table.SelectRows(Clean, each [ResourceGroup] <> null and Text.Trim(Text.From([ResourceGroup])) <> "" and [ResourceName] <> null and Text.Trim(Text.From([ResourceName])) <> ""),
 			    Typed = Table.TransformColumnTypes(Filtered,{
 			        {"ResourceType", type text}, {"ChangeRequest", type text}, {"ResourceGroup", type text},
 			        {"ResourceName", type text}, {"RiskLevel", type text}, {"Severity", type text},
@@ -260,9 +279,27 @@ table FactProjects
 			        {"Progress", type number}, {"Implementer", type text}
 			    }),
 			    Renamed = Table.RenameColumns(Typed, {{"Última fecha: Date Report", "Date Report"}}),
-			    ProgressNormalized = Table.TransformColumns(Renamed, {{"Progress", each try if _ = null then null else if Number.From(_) > 1 then Number.From(_) / 100 else Number.From(_) otherwise null, type number}}),
+			    TrimmedText = Table.TransformColumns(Renamed, {
+			        {"ResourceType", each if _ = null then null else Text.Trim(Text.Clean(Text.From(_))), type text},
+			        {"ChangeRequest", each if _ = null or Text.Trim(Text.From(_)) = "" then "Not provided" else Text.Trim(Text.Clean(Text.From(_))), type text},
+			        {"ResourceGroup", each Text.Trim(Text.Clean(Text.From(_))), type text},
+			        {"ResourceName", each Text.Trim(Text.Clean(Text.From(_))), type text},
+			        {"RiskLevel", each Text.Proper(Text.Trim(Text.From(_))), type text},
+			        {"Severity", each Text.Proper(Text.Trim(Text.From(_))), type text},
+			        {"UserImpact", each if _ = null or Text.Trim(Text.From(_)) = "" then "Not provided" else Text.Trim(Text.Clean(Text.From(_))), type text},
+			        {"DisplayName", each if _ = null or Text.Trim(Text.From(_)) = "" then "Not provided" else Text.Trim(Text.Clean(Text.From(_))), type text},
+			        {"Description", each if _ = null or Text.Trim(Text.From(_)) = "" then "Not provided" else Text.Trim(Text.Clean(Text.From(_))), type text},
+			        {"RemediationDescription", each if _ = null or Text.Trim(Text.From(_)) = "" then "Not provided" else Text.Trim(Text.Clean(Text.From(_))), type text},
+			        {"SLA_Compliance", each if _ = null then "Not provided" else Text.Trim(Text.From(_)), type text},
+			        {"Owner", each if _ = null or Text.Trim(Text.From(_)) = "" then "Not assigned" else Text.Lower(Text.Trim(Text.From(_))), type text},
+			        {"Environment", each if _ = "Nom-Prod" then "Non-Prod" else Text.Trim(Text.From(_)), type text},
+			        {"Status_code", each if _ = null then "Not provided" else Text.Trim(Text.From(_)), type text},
+			        {"Implementer", each if _ = null or Text.Trim(Text.From(_)) = "" then "Not assigned" else Text.Trim(Text.Clean(Text.From(_))), type text}
+			    }),
+
+			    ProgressNormalized = Table.TransformColumns(TrimmedText, {{"Progress", each try if _ = null then null else if Number.From(_) > 1 then Number.From(_) / 100 else Number.From(_) otherwise null, type number}}),
 			    EvaluationMonth = Table.AddColumn(ProgressNormalized, "Evaluation Month", each if [FirstEvaluationDate] = null then null else Date.StartOfMonth([FirstEvaluationDate]), type date),
-			    AgeBand = Table.AddColumn(EvaluationMonth, "Age Band", each if [Vulnerability Age] = null then "Sin dato" else if [Vulnerability Age] <= 30 then "0-30 días" else if [Vulnerability Age] <= 60 then "31-60 días" else if [Vulnerability Age] <= 90 then "61-90 días" else ">90 días", type text),
+			    AgeBand = Table.AddColumn(EvaluationMonth, "Age Band", each if [Vulnerability Age] = null then "No data" else if [Vulnerability Age] <= 30 then "0-30 days" else if [Vulnerability Age] <= 60 then "31-60 days" else if [Vulnerability Age] <= 90 then "61-90 days" else ">90 days", type text),
 			    ResourceKey = Table.AddColumn(AgeBand, "ResourceKey", each Text.Combine(List.RemoveNulls({[ResourceGroup],[ResourceName]}), " | "), type text),
 			    Project = Table.AddColumn(ResourceKey, "Project", each [ResourceGroup], type text),
 			    ProjectId = Table.AddColumn(Project, "Project ID", each [ResourceName], type text),
