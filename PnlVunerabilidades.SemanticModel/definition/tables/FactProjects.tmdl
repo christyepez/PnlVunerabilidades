@@ -64,20 +64,21 @@ table FactProjects
 	measure 'Distinct Resources' = DISTINCTCOUNT(FactProjects[ResourceKey])
 		formatString: #,##0
 
-	measure 'Data Quality Complete %' = 
-		DIVIDE(
-			CALCULATE(
-				[Total Vulnerabilities],
-				FactProjects[ResourceGroup] <> BLANK(),
-				FactProjects[ResourceName] <> BLANK(),
-				FactProjects[RiskLevel] <> BLANK(),
-				FactProjects[Severity] <> BLANK(),
-				FactProjects[SLA_Compliance] <> BLANK(),
-				FactProjects[Environment] <> BLANK(),
-				FactProjects[Status_code] <> BLANK()
-			),
-			[Total Vulnerabilities]
-		)
+
+
+
+
+
+
+	measure 'Data Quality Issues' = 
+		VAR MissingResource = CALCULATE(COUNTROWS(FactProjects), FactProjects[ResourceName] = "Unknown")
+		VAR MissingOwner = CALCULATE(COUNTROWS(FactProjects), FactProjects[Owner] = "Unassigned")
+		VAR MissingRisk = CALCULATE(COUNTROWS(FactProjects), FactProjects[RiskLevel] = "Unknown")
+		VAR MissingSeverity = CALCULATE(COUNTROWS(FactProjects), FactProjects[Severity] = "Unknown")
+		RETURN MissingResource + MissingOwner + MissingRisk + MissingSeverity
+		formatString: #,##0
+
+	measure 'Data Quality %' = DIVIDE([Total Vulnerabilities] - [Data Quality Issues], [Total Vulnerabilities], 1)
 		formatString: 0.0%
 
 	column Project
@@ -268,7 +269,7 @@ table FactProjects
 			    RawSheet = Source{[Item="Sheet1",Kind="Sheet"]}[Data],
 			    Promoted = Table.PromoteHeaders(RawSheet, [PromoteAllScalars=true]),
 			    Clean = Table.TransformColumnNames(Promoted, each Text.Trim(Text.Clean(Text.From(_)))),
-			    Filtered = Table.SelectRows(Clean, each [ResourceGroup] <> null and Text.Trim(Text.From([ResourceGroup])) <> "" and [ResourceName] <> null and Text.Trim(Text.From([ResourceName])) <> ""),
+			    Filtered = Table.SelectRows(Clean, each [ResourceGroup] <> null),
 			    Typed = Table.TransformColumnTypes(Filtered,{
 			        {"ResourceType", type text}, {"ChangeRequest", type text}, {"ResourceGroup", type text},
 			        {"ResourceName", type text}, {"RiskLevel", type text}, {"Severity", type text},
@@ -281,25 +282,35 @@ table FactProjects
 			    Renamed = Table.RenameColumns(Typed, {{"Última fecha: Date Report", "Date Report"}}),
 			    TrimmedText = Table.TransformColumns(Renamed, {
 			        {"ResourceType", each if _ = null then null else Text.Trim(Text.Clean(Text.From(_))), type text},
-			        {"ChangeRequest", each if _ = null or Text.Trim(Text.From(_)) = "" then "Not provided" else Text.Trim(Text.Clean(Text.From(_))), type text},
-			        {"ResourceGroup", each Text.Trim(Text.Clean(Text.From(_))), type text},
-			        {"ResourceName", each Text.Trim(Text.Clean(Text.From(_))), type text},
-			        {"RiskLevel", each Text.Proper(Text.Trim(Text.From(_))), type text},
-			        {"Severity", each Text.Proper(Text.Trim(Text.From(_))), type text},
-			        {"UserImpact", each if _ = null or Text.Trim(Text.From(_)) = "" then "Not provided" else Text.Trim(Text.Clean(Text.From(_))), type text},
-			        {"DisplayName", each if _ = null or Text.Trim(Text.From(_)) = "" then "Not provided" else Text.Trim(Text.Clean(Text.From(_))), type text},
-			        {"Description", each if _ = null or Text.Trim(Text.From(_)) = "" then "Not provided" else Text.Trim(Text.Clean(Text.From(_))), type text},
-			        {"RemediationDescription", each if _ = null or Text.Trim(Text.From(_)) = "" then "Not provided" else Text.Trim(Text.Clean(Text.From(_))), type text},
-			        {"SLA_Compliance", each if _ = null then "Not provided" else Text.Trim(Text.From(_)), type text},
-			        {"Owner", each if _ = null or Text.Trim(Text.From(_)) = "" then "Not assigned" else Text.Lower(Text.Trim(Text.From(_))), type text},
-			        {"Environment", each if _ = "Nom-Prod" then "Non-Prod" else Text.Trim(Text.From(_)), type text},
-			        {"Status_code", each if _ = null then "Not provided" else Text.Trim(Text.From(_)), type text},
-			        {"Implementer", each if _ = null or Text.Trim(Text.From(_)) = "" then "Not assigned" else Text.Trim(Text.Clean(Text.From(_))), type text}
+			        {"ChangeRequest", each if _ = null then null else Text.Trim(Text.Clean(Text.From(_))), type text},
+			        {"ResourceGroup", each if _ = null then null else Text.Trim(Text.Clean(Text.From(_))), type text},
+			        {"ResourceName", each if _ = null then null else Text.Trim(Text.Clean(Text.From(_))), type text},
+			        {"RiskLevel", each if _ = null then null else Text.Trim(Text.Clean(Text.From(_))), type text},
+			        {"Severity", each if _ = null then null else Text.Trim(Text.Clean(Text.From(_))), type text},
+			        {"UserImpact", each if _ = null then null else Text.Trim(Text.Clean(Text.From(_))), type text},
+			        {"DisplayName", each if _ = null then null else Text.Trim(Text.Clean(Text.From(_))), type text},
+			        {"SLA_Compliance", each if _ = null then null else Text.Trim(Text.Clean(Text.From(_))), type text},
+			        {"Owner", each if _ = null then null else Text.Trim(Text.Clean(Text.From(_))), type text},
+			        {"Environment", each if _ = null then null else Text.Trim(Text.Clean(Text.From(_))), type text},
+			        {"Status_code", each if _ = null then null else Text.Trim(Text.Clean(Text.From(_))), type text},
+			        {"Implementer", each if _ = null then null else Text.Trim(Text.Clean(Text.From(_))), type text}
 			    }),
-
-			    ProgressNormalized = Table.TransformColumns(TrimmedText, {{"Progress", each try if _ = null then null else if Number.From(_) > 1 then Number.From(_) / 100 else Number.From(_) otherwise null, type number}}),
+			    NormalizedEnvironment = Table.TransformColumns(TrimmedText, {{"Environment", each if _ = "Nom-Prod" then "Non-Prod" else _, type text}}),
+			    NormalizedChangeRequest = Table.TransformColumns(NormalizedEnvironment, {{"ChangeRequest", each if _ = null or _ = "" then "Not Assigned" else if Text.Lower(_) = "no aplica" then "Not Applicable" else _, type text}}),
+			    QualityDefaults = Table.TransformColumns(NormalizedChangeRequest, {
+			        {"Owner", each if _ = null or _ = "" then "Unassigned" else _, type text},
+			        {"Implementer", each if _ = null or _ = "" then "Unassigned" else _, type text},
+			        {"ResourceType", each if _ = null or _ = "" then "Unknown" else _, type text},
+			        {"ResourceName", each if _ = null or _ = "" then "Unknown" else _, type text},
+			        {"RiskLevel", each if _ = null or _ = "" then "Unknown" else _, type text},
+			        {"Severity", each if _ = null or _ = "" then "Unknown" else _, type text},
+			        {"SLA_Compliance", each if _ = null or _ = "" then "Unknown" else _, type text},
+			        {"Environment", each if _ = null or _ = "" then "Unknown" else _, type text},
+			        {"Status_code", each if _ = null or _ = "" then "Unknown" else _, type text}
+			    }),
+			    ProgressNormalized = Table.TransformColumns(QualityDefaults, {{"Progress", each try if _ = null then null else if Number.From(_) > 1 then Number.From(_) / 100 else Number.From(_) otherwise null, type number}}),
 			    EvaluationMonth = Table.AddColumn(ProgressNormalized, "Evaluation Month", each if [FirstEvaluationDate] = null then null else Date.StartOfMonth([FirstEvaluationDate]), type date),
-			    AgeBand = Table.AddColumn(EvaluationMonth, "Age Band", each if [Vulnerability Age] = null then "No data" else if [Vulnerability Age] <= 30 then "0-30 days" else if [Vulnerability Age] <= 60 then "31-60 days" else if [Vulnerability Age] <= 90 then "61-90 days" else ">90 days", type text),
+			    AgeBand = Table.AddColumn(EvaluationMonth, "Age Band", each if [Vulnerability Age] = null then "No Data" else if [Vulnerability Age] <= 30 then "0-30 days" else if [Vulnerability Age] <= 60 then "31-60 days" else if [Vulnerability Age] <= 90 then "61-90 days" else ">90 days", type text),
 			    ResourceKey = Table.AddColumn(AgeBand, "ResourceKey", each Text.Combine(List.RemoveNulls({[ResourceGroup],[ResourceName]}), " | "), type text),
 			    Project = Table.AddColumn(ResourceKey, "Project", each [ResourceGroup], type text),
 			    ProjectId = Table.AddColumn(Project, "Project ID", each [ResourceName], type text),
